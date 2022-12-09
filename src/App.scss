@@ -1,0 +1,53 @@
+.App {
+  text-align: center;
+  .key-card {
+    transition: all ease 0.2s;
+    transform: scale(1);
+    &:hover {
+      // transform: scale(1.05);
+    }
+    .ant-card-body {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      align-items: center;
+      width: 276px;
+      height: 276px;
+      > * {
+        max-width: 100%;
+        max-height: 100%;
+      }
+    }
+    .icon-edit,
+    .icon-delete,
+    .icon-download,
+    .icon-copy {
+      margin-left: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transform: scale(1);
+      transition: all ease 0.2s;
+      &:hover {
+        transform: scale(1.2);
+      }
+    }
+  }
+}
+.modal-add-data {
+  .ant-modal {
+    width: 80vw !important;
+    max-width: 660px;
+    .ant-input-group-addon {
+      font-size: 12px;
+    }
+    @media only screen and (max-width: 750px) {
+      .ant-input-group-addon {
+        max-width: 24vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
