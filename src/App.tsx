@@ -1,18 +1,19 @@
-import { Button, Card, Col, Input, InputRef, message, Modal, Row, Steps, Tag } from 'antd';
+import { Button, Card, Col, Dropdown, Input, InputRef, MenuProps, message, Modal, Row, Steps, Tag } from 'antd';
 import axios from 'axios';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useAccount, useConnect, useNetwork, useSigner, useSwitchNetwork } from 'wagmi';
 import './App.scss';
 import { Constants } from './constants';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import Storage from './lib/storage';
-import { Object2Message, txtMiddleEllipsis } from './lib/utils';
+import { Object2Message, sleep, txtMiddleEllipsis } from './lib/utils';
 import DataContent from './components/DataContent';
 import CopyIcon from './components/Copy';
 import { useEffect } from 'react';
 import { useUserRecords } from './lib/userRecords';
-
-const keyManage = new Storage<string[]>('userKeys');
+import { useIpfsGateway } from './lib/useIpfsGateway';
+import { useLogin } from './lib/useLogin';
+import { ethers } from 'ethers';
 
 function App() {
   const acc = useAccount();
@@ -24,10 +25,8 @@ function App() {
   const [isModalOpen, _isModalOpen] = useState(false);
   const [confirmLoading, _confirmLoading] = useState(false);
   const records = useUserRecords();
-  const [UserKeys, _UserKeys] = useState(() => {
-    const local = keyManage.get() || [];
-    return Array.from(new Set([...Constants.PredefinedKeys, ...local]));
-  });
+  const gateway = useIpfsGateway();
+  const auth = useLogin();
   const stepCurrent = (() => {
     if (!acc.connector) return 0;
     if (!net.chain) return 1;
@@ -43,17 +42,11 @@ function App() {
     const key = inputKey.trim();
     let value = inputValue.trim();
     if (!value) {
-      _UserKeys((v) => {
-        const newItem = Array.from(new Set([...v, key]));
-        keyManage.set(newItem);
-        return newItem;
-      });
-      _isModalOpen(false);
       return;
     }
     if (!value.match(/\//)) value = `/ipfs/${value}`;
     if (!value.match(/^\//)) value = `/${value}`;
-    const urls = [`${Constants.ipfsGateway}`, value];
+    const urls = [`${gateway.current}`, value];
     const url = urls.join('');
     _confirmLoading(true);
     axios
@@ -80,14 +73,9 @@ function App() {
         );
         const post = await axios.post(`${Constants.API}`, req);
         console.log(post);
-        if (post.data && post.data.success && post.data.result) {
-          _UserKeys((v) => {
-            const newItem = Array.from(new Set([...v, key]));
-            keyManage.set(newItem);
-            return newItem;
-          });
-          _isModalOpen(false);
-        }
+        _isModalOpen(false);
+        await sleep(1000);
+        records.update();
       })
       .catch((e) => {
         console.log(e);
@@ -99,8 +87,42 @@ function App() {
       });
   }
 
+  const getRecordName = (key: typeof records.res[0]) => {
+    const res = key.name
+      .replace('_dnslink.', '')
+      .replace(`${acc.address!.toLocaleLowerCase()}.`, '')
+      .replace(`.${Constants.ipnsDomain}`, '');
+    return res;
+  };
+  const keys = records.res.map((item) => {
+    return {
+      name: getRecordName(item),
+      content: item.content.replace('dnslink=', ''),
+    };
+  });
+  if (!keys.find((el) => el.name === 'avatar')) keys.unshift({ name: 'avatar', content: '' });
+
   return (
     <div className="App" style={{ padding: '20px' }}>
+      <div style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
+        <div style={{ width: '150px' }}>IPFS gateway:</div>
+        <Dropdown.Button
+          style={{ marginLeft: '10px' }}
+          icon={<DownOutlined />}
+          menu={{
+            defaultSelectedKeys: [gateway.current],
+            selectable: true,
+            onClick: (e) => gateway._current(e.key),
+            items: gateway.gatewayList.map((v) => ({ label: v, key: v })),
+          }}
+          // onClick={() => gateway._current()}
+        >
+          {gateway.current}
+        </Dropdown.Button>
+      </div>
+
+      <br />
+
       <Steps
         direction="vertical"
         progressDot
@@ -109,7 +131,7 @@ function App() {
           {
             title: (
               <>
-                Connect Wallet
+                Connect Wallet{' '}
                 {acc.connector ? (
                   <Tag color="blue">{acc.address}</Tag>
                 ) : (
@@ -131,7 +153,17 @@ function App() {
             )),
           },
           {
-            title: `Network ID: ${net.chain ? `${net.chain.id}` : '...'}`,
+            title: `${auth.msg ? 'Logged in' : 'Login'}`,
+            description: (
+              <Button
+                type={auth.msg ? 'primary' : 'default'}
+                disabled={!signer.data}
+                onClick={() => auth.checkLogin()}
+                style={{ marginRight: '10px' }}
+              >
+                Login
+              </Button>
+            ),
           },
           {
             title: 'My Data',
@@ -143,9 +175,9 @@ function App() {
                       <PlusOutlined />
                     </Button>
                   </Col>
-                  {UserKeys.map((key) => (
-                    <Col key={key} style={{ marginBottom: '20px', width: '300px' }}>
-                      <DataContent update={Submit} address={acc.address!} name={key} />
+                  {keys.map((item) => (
+                    <Col key={item.name} style={{ marginBottom: '20px', width: '300px' }}>
+                      <DataContent update={Submit} address={acc.address!} name={item.name} content={item.content} />
                     </Col>
                   ))}
                 </Row>

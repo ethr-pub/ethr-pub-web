@@ -13,21 +13,25 @@ import {
   FileOutlined,
   FileJpgOutlined,
   FileTextOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import './index.scss';
 import CopyIcon from '../Copy';
 import { useAccount, useSigner } from 'wagmi';
+import { useIpfsGateway } from '../../lib/useIpfsGateway';
 
 export interface IDataContent {
   address: string;
   name: string;
   update: (name: string) => any;
+  content?: string;
 }
 
 const DataContent: React.FC<IDataContent> = (props) => {
   const acc = useAccount();
   const signer = useSigner();
   const last = useRef('');
+  const gateway = useIpfsGateway();
   const [loading, _loading] = useState(true);
   const [data, _data] = useState({
     status: 0,
@@ -37,9 +41,13 @@ const DataContent: React.FC<IDataContent> = (props) => {
     'x-ipfs-roots': '' as string | undefined,
     data: null as any,
   });
-  const urls = [`${Constants.ipfsGateway}/ipns/${props.address}`, props.name, Constants.ipnsDomain];
+  const urls = [`${gateway.current}/ipns/${props.address}`, props.name, Constants.ipnsDomain];
   const url = urls.join('.').replace(/\.\./, '.');
   useEffect(() => {
+    update();
+  }, [url]);
+
+  async function update() {
     if (!props.address) return;
     if (last.current === url) return; // repeat
     _loading(true);
@@ -63,8 +71,9 @@ const DataContent: React.FC<IDataContent> = (props) => {
       })
       .finally(() => {
         _loading(false);
+        last.current = '';
       });
-  }, [url]);
+  }
 
   const download = () => {
     axios
@@ -126,7 +135,8 @@ const DataContent: React.FC<IDataContent> = (props) => {
         <>
           <EditOutlined onClick={() => props.update(props.name)} className="icon-edit" style={{ color: 'blue' }} />
           <DownloadOutlined onClick={download} className="icon-download" style={{ color: 'green' }} />
-          <CopyIcon className="icon-copy" text={url} />
+          {props.content ? <CopyIcon className="icon-copy" text={props.content} /> : null}
+          <CopyIcon className="icon-copy" el={<LinkOutlined />} text={url} />
           <Popconfirm
             title="Are you sure to delete this item?"
             onConfirm={deleteCard}
@@ -136,6 +146,7 @@ const DataContent: React.FC<IDataContent> = (props) => {
           >
             <DeleteOutlined className="icon-delete" style={{ color: 'red' }} />
           </Popconfirm>
+          <ReloadOutlined onClick={update} className="icon-copy" style={{ color: 'green' }} />
         </>
       }
     >

@@ -10,3 +10,5 @@ export const Object2Message = (obj: Record<string, string>) => {
   list.sort();
   return list.join('\r\n\n');
 };
+
+export const sleep = (ms = 100) => new Promise((r) => setTimeout(r, ms));
