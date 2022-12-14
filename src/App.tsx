@@ -100,7 +100,11 @@ function App() {
       content: item.content.replace('dnslink=', ''),
     };
   });
-  if (!keys.find((el) => el.name === 'avatar')) keys.unshift({ name: 'avatar', content: '' });
+  if (acc.address) {
+    if (!keys.find((el) => el.name === 'avatar')) {
+      keys.unshift({ name: 'avatar', content: '' });
+    }
+  }
 
   return (
     <div className="App" style={{ padding: '20px' }}>

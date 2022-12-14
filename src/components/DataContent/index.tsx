@@ -137,15 +137,17 @@ const DataContent: React.FC<IDataContent> = (props) => {
           <DownloadOutlined onClick={download} className="icon-download" style={{ color: 'green' }} />
           {props.content ? <CopyIcon className="icon-copy" text={props.content} /> : null}
           <CopyIcon className="icon-copy" el={<LinkOutlined />} text={url} />
-          <Popconfirm
-            title="Are you sure to delete this item?"
-            onConfirm={deleteCard}
-            // onCancel={cancel}
-            okText="Yes"
-            cancelText="No"
-          >
-            <DeleteOutlined className="icon-delete" style={{ color: 'red' }} />
-          </Popconfirm>
+          {props.content ? (
+            <Popconfirm
+              title="Are you sure to delete this item?"
+              onConfirm={deleteCard}
+              // onCancel={cancel}
+              okText="Yes"
+              cancelText="No"
+            >
+              <DeleteOutlined className="icon-delete" style={{ color: 'red' }} />
+            </Popconfirm>
+          ) : null}
           <ReloadOutlined onClick={update} className="icon-copy" style={{ color: 'green' }} />
         </>
       }
