@@ -17,6 +17,6 @@ module.exports = {
   plugins: ['react', '@typescript-eslint'],
   rules: {
     'react/jsx-filename-extension': [1, { extensions: ['.js', '.jsx', '.ts', '.tsx'] }],
-    'no-console': process.env.NODE_ENV === 'development' ? 'off' : 'error',
+    'no-console': 'off',
   },
 };
